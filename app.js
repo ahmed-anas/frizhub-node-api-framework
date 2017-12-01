@@ -12,19 +12,20 @@ var passport = require('passport');
 var config = require('./config/config');
 var app = express();
 var db = require('./config/db');
+var SwaggerExpress = require('swagger-express-mw');
+
 //initialize passport.js strategies
 config.getGlobbedFiles('./config/strategies/**/*.js').forEach(function (strategy) {
-    require(path.resolve(strategy))();
+  require(path.resolve(strategy))();
 });
-
-
 config.getGlobbedFiles('./app/**/*.sequelize.model.js').forEach(function (file) {
   let v = require(path.resolve(file));
-  if(v.$$app_addRelations){
-      v.$$app_addRelations();
-      delete v.$$app_addRelations;        
+  if (v.$$app_addRelations) {
+    v.$$app_addRelations();
+    delete v.$$app_addRelations;
   }
 });
+
 
 app.use(function (req, res, next) {
   res.header("Access-Control-Allow-Origin", "*");
@@ -34,21 +35,62 @@ app.use(function (req, res, next) {
 });
 app.use(passport.initialize());
 
-app.use( bodyParser.json({limit: '5mb'}) );
+app.use(bodyParser.json({ limit: '5mb' }));
 app.use(bodyParser.urlencoded({
   limit: '5mb',
   extended: true,
-  parameterLimit:5000
+  parameterLimit: 5000
 }));
-var users = require('./app/user/user-auth.route');
 
-app.use('/auth', users);
+//Swagger
 
-app.get("/", function(req, res) {
-    res.json({message: "Express is up!"});
+var swaggerConfig = {
+  appRoot: `${__dirname}`,
+  swaggerFile: `${__dirname}/swagger/swagger.yaml`,
+  swaggerSecurityHandlers: {
+    "jwt": function securityHandler1(req, authOrSecDef, scopes, callback) {
+      passport.authenticate('jwt', { session: false }, (err, user, info) => {
+        if (err) return callback(new Error('Error in passport authenticate'));
+        if (!user) return callback(new Error('Failed to authenticate token'));
+        req.user = user;
+        return callback();
+      })(req, null, callback);
+
+    },
+
+  }
+};
+SwaggerExpress.create(swaggerConfig, function (err, swaggerExpress) {
+  if (err) { throw err; }
+
+  // install middleware
+  swaggerExpress.register(app);
+  // catch 404 and forward to error handler
+  app.use(function (req, res, next) {
+    var err = new Error('Not Found');
+    err.status = 404;
+    next(err);
   });
-  
-  app.listen(3000, function() {
+
+  // error handler
+  app.use(function (err, req, res, next) {
+    // set locals, only providing error in development
+    res.locals.message = err.message;
+    res.locals.error = config.env === 'development' ? err : {};
+
+    // render the error page
+    res.status(err.status || 500);
+    res.render('error');
+  });
+
+  let port = process.env.PORT || 3000;
+  app.listen(port, function () {
     console.log("Express running");
-  });
-  module.exports = app;
+  })
+
+
+});
+
+
+
+module.exports = app;

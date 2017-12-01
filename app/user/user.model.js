@@ -20,14 +20,15 @@ module.exports.ACCESS_LEVEL = {
         'name',
     ],
     OTHER_USERS: [
-        'userId',
+        'id',
         'email',
         'name',
     ],
     THIS_USER_SAFE: [
-        'userId',
+        'id',
         'email',
         'name',
+        'role'
     ]
 };
 module.exports.getUser = function (userObj, ACCESS_LEVEL = module.exports.ACCESS_LEVEL.OTHER_USERS) {
@@ -45,14 +46,15 @@ module.exports.getUserById = function (userId, ACCESS_LEVEL = module.exports.ACC
 module.exports.getSafeObject = function (userObj, ACCESS_LEVEL) {
     return _.pick(userObj, ACCESS_LEVEL || module.exports.ACCESS_LEVEL.THIS_USER_SAFE);
 }
-module.exports.getTokenAndPayload = function (user) {
-    var payload = { userId: user.userId, role: user.role };
+function getTokenAndPayload(user) {
+    var payload = { userId: user.id, role: user.role };
     var token = jwt.sign(payload, config.jwtSecret, { expiresIn: 15000 });
     return {
         token: token,
         payload: payload
     };
 }
+module.exports.getTokenAndPayload = getTokenAndPayload
 module.exports.createUser = function (userObj) {
     var safeObj = _.pick(userObj, userCreateableFields);
     if (Object.keys(safeObj).length <= 0) {

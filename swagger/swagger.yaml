@@ -1,0 +1,134 @@
+swagger: "2.0"
+info:
+  version: "0.0.1"
+  title: Simple Api
+# during dev, should point to your local machine
+host: localhost:3000
+# basePath prefixes all resource paths 
+basePath: /
+# 
+schemes:
+  # tip: remove http to make production-grade
+  - http
+  - https
+# format of bodies a client can send (Content-Type)
+consumes:
+  - application/json
+# format of the responses to the client (Accepts)
+produces:
+  - application/json
+paths:
+  /auth/signin:
+    # our controller name
+    x-swagger-router-controller: user/user.controller
+    post:
+      operationId: signIn
+      description: Autheticate the user
+      # user info 
+      parameters:
+        - name: email
+          description: User Email for authentication
+          in: body
+          required: true
+          schema:
+            $ref: "#/definitions/SignIn"
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/GeneralResponse"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  /auth/signup:
+    # our controller name
+    x-swagger-router-controller: user/user.controller
+    post:
+      operationId: signUp
+      description: Registration
+      # user info to be stored
+      parameters:
+        - name: email
+          description: User Email for registration
+          in: body
+          required: true
+          schema:
+            $ref: "#/definitions/Signup"
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/GeneralResponse"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  
+  /secret:
+    x-swagger-router-controller: user/user.controller
+    get:
+      operationId: test
+      description: "Test route endpoint"
+      security:
+      - jwt: []
+      responses:
+        "200":
+          description: "Success"
+         
+  /swagger:
+    x-swagger-pipe: swagger_raw
+# complex objects have schema definitions
+securityDefinitions:
+   jwt:
+     type: apiKey
+     in: header
+     name: Authorization
+  
+definitions:
+  SignIn:
+    type: object
+    properties:
+      email:
+        type: string
+        description: User Email for authentication
+      password:
+        type: string
+        description: User password for authentication
+    required:
+      - email
+      - password
+  Signup:
+    type: object
+    properties:
+      email:
+        type: string
+        description: User Email for authentication
+      password:
+        type: string
+        description: User password for authentication
+      name:
+        type: string
+        description : Name of User
+    required:
+      - email
+      - password
+     
+  GeneralResponse:
+    type: object
+    properties:
+      success:
+        type: number
+        description: returns 1 if successful
+      description:
+        type: string
+        description: a short comment 
+    required:
+      - success
+      - description
+  ErrorResponse:
+    required:
+      - message
+    properties:
+      message:
+        type: string
